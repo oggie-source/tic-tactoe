@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            font-family: 'Signika', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #87CEFA, #FFC0CB);
+            position: relative;
+        }
+        .container {
+            text-align: center;
+        }
+        .title {
+            color: #333;
+            margin-bottom: 20px; /* Added margin to separate from buttons */
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            background-color: #fff;
+            border-radius: 10px;
+            margin: 20px auto;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            background-color: #ddd;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .cell:hover {
+            background-color: #ccc;
+        }
+        .game-over {
+            display: none;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+        }
+        .game-over-text {
+            color: #333;
+        }
+        .restart-button {
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin-top: 5px; /* Adjusted margin-top to move the button higher */
+        }
+        .restart-button:hover {
+            background-color: #45a049;
+        }
+        .best-of-3-button {
+            position: absolute;
+            bottom: 10px; /* Adjusted position to the bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #FF69B4;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
+        }
+        .best-of-3-button.off {
+            background-color: #FF1493;
+        }
+        .round-indicator {
+            display: none;
+            margin-top: 10px;
+        }
+        .round-label {
+            color: #333;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .round-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #FF69B4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Tic Tac Toe</h1>
+        <button id="best-of-3-button" class="best-of-3-button" onclick="toggleBestOfThree()">Best of 3</button>
+        <div id="round-indicator" class="round-indicator">
+            <div class="round-label">Round:</div>
+            <div id="round-number" class="round-number">1</div>
+        </div>
+        <div id="board" class="board">
+            <div class="cell" onclick="handleClick(0)"></div>
+            <div class="cell" onclick="handleClick(1)"></div>
+            <div class="cell" onclick="handleClick(2)"></div>
+            <div class="cell" onclick="handleClick(3)"></div>
+            <div class="cell" onclick="handleClick(4)"></div>
+            <div class="cell" onclick="handleClick(5)"></div>
+            <div class="cell" onclick="handleClick(6)"></div>
+            <div class="cell" onclick="handleClick(7)"></div>
+            <div class="cell" onclick="handleClick(8)"></div>
+        </div>
+        <div id="game-over" class="game-over">
+            <h2 id="game-over-text" class="game-over-text">Game Over!</h2>
+            <button id="restart-button" class="restart-button" onclick="restartGame()">Restart</button>
+        </div>
+    </div>
+    <script>
+        // Game variables
+        let currentPlayer = 'X';
+        let boardState = Array(9).fill(null);
+        let gameActive = true;
+        let bestOfThree = false;
+        let gamesPlayed = 0;
+        let playerXWins = 0;
+        let playerOWins = 0;
+
+        // Win combinations
+        const winPatterns = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        // DOM elements
+        const board = document.getElementById('board');
+        const gameOverScreen = document.getElementById('game-over');
+        const gameOverText = document.getElementById('game-over-text');
+        const restartButton = document.getElementById('restart-button');
+        const bestOfThreeButton = document.getElementById('best-of-3-button');
+        const roundIndicator = document.getElementById('round-indicator');
+        const roundNumberElement = document.getElementById('round-number');
+
+        // Handle cell click
+        function handleClick(index) {
+            if (boardState[index] === null && gameActive) {
+                boardState[index] = currentPlayer;
+                renderBoard();
+                const winner = checkWinner();
+                if (winner) {
+                    declareWinner(winner === 'Tie' ? "It's a Tie!" : `${winner} Wins!`);
+                } else {
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                }
+            }
+        }
+
+        // Check for a winner
+        function checkWinner() {
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                    return boardState[a];
+                }
+            }
+            return boardState.includes(null) ? null : 'Tie';
+        }
+
+        // Declare the winner or tie
+        function declareWinner(message) {
+            gameActive = false;
+            if (message.includes('Wins')) {
+                message.includes('X') ? playerXWins++ : playerOWins++;
+                gamesPlayed++;
+            }
+            gameOverText.textContent = message;
+            gameOverScreen.style.display = 'block';
+            updateBestOfThree();
+        }
+
+        // Restart the game
+        function restartGame() {
+            currentPlayer = 'X';
+            boardState = Array(9).fill(null);
+            gameActive = true;
+            gameOverScreen.style.display = 'none';
+            renderBoard();
+        }
+
+        // Toggle Best of 3 mode
+        function toggleBestOfThree() {
+            bestOfThree = !bestOfThree;
+            roundIndicator.style.display = bestOfThree ? 'block' : 'none';
+            roundNumberElement.textContent = '1'; // Reset round number to 1 when toggled on
+            bestOfThreeButton.classList.toggle('off', !bestOfThree);
+            bestOfThreeButton.style.backgroundColor = bestOfThree ? '#4CAF50' : '#FF1493';
+            restartGame(); // Restart game when toggled on
+        }
+
+        // Update Best of 3 status
+        function updateBestOfThree() {
+            if (bestOfThree && gamesPlayed >= 3) {
+                if (playerXWins >= 2) {
+                    gameOverText.textContent = "Player X wins the Best of 3!";
+                } else if (playerOWins >= 2) {
+                    gameOverText.textContent = "Player O wins the Best of 3!";
+                } else {
+                    gameOverText.textContent = "It's a Tie in the Best of 3!";
+                }
+                restartButton.style.marginTop = '10px'; // Move button higher
+                restartButton.style.display = 'block';
+                bestOfThreeButton.disabled = false;
+                bestOfThreeButton.style.backgroundColor = '#FF69B4'; // Reset button color
+                bestOfThreeButton.classList.remove('off');
+                bestOfThree = false;
+                gamesPlayed = 0;
+                playerXWins = 0;
+                playerOWins = 0;
+                gameOverScreen.style.display = 'block';
+            } else if (bestOfThree && gamesPlayed < 3) {
+                roundNumberElement.textContent = (gamesPlayed + 1).toString();
+            }
+        }
+
+        // Render the game board
+        function renderBoard() {
+            board.innerHTML = '';
+            boardState.forEach((cell, index) => {
+                const cellElement = document.createElement('div');
+                cellElement.classList.add('cell');
+                cellElement.textContent = cell;
+                cellElement.addEventListener('click', () => handleClick(index));
+                board.appendChild(cellElement);
+            });
+        }
+
+        renderBoard();
+    </script>
+</body>
+</html>
